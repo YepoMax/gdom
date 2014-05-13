@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE bookstore [
+	<!ENTITY dollar "&#36; (US DOLLAR)">
+	<!ENTITY euro "&#8364; (EURO)">
+	<!ELEMENT book (title,author,year,price)+>
+		<!ATTLIST book id ID #REQUIRED>
+		<!ELEMENT title (#PCDATA)>
+		<!ELEMENT author (#PCDATA)>
+		<!ELEMENT year (#PCDATA)>
+		<!ELEMENT price (#PCDATA)>
+	<!ELEMENT store (location, hours)+>
+		<!ELEMENT location (#PCDATA)>
+		<!ELEMENT hours (#PCDATA)>
+]>
+<!-- For testing purpose. -->
+<!-- Taken from w3schools.com, extended by S. Maximilien -->
+<bookstore>
+	<book category="CHILDREN" id="hp1">
+		<title> Harry Potter and the Philosopher's Stone</title>
+		<author>J K. Rowling</author>
+		<year>2005</year>
+		<price currency="dollar">29.99&dollar;</price>
+	</book>
+	<book category="WEB" id="web1">
+		<title>Learning XML</title>
+		<author>Erik T. Ray</author>
+		<year>2003</year>
+		<price currency="dollar">39.95&dollar;</price>
+	</book>
+	<stores>
+		<store country="USA">
+			<location>Interstate 68, Bruceton Mills</location>
+			<hours>From 8:00AM to 17:00PM</hours>
+		</store>
+		<store country="BELGIUM">
+			<location>204 Rue de l'université, 1050 Bruxelles</location>
+			<hours>Ouvert de 8 à 18h 5j/7</hours>
+		</store>
+	</stores>
+</bookstore>
