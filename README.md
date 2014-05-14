@@ -2,6 +2,7 @@ gdom
 ====
 
 IMPORTANT NOTE : DO NOT PAY ATTENTION TO THIS PROJECT - project is not open yet.
+BUT : If you want to contribute to the project before I post first versions, contact me at maximilien.smout@hotmail.com
 
 gdom provides a DOM (Level 3) implementation to Python that is intended to replace the built-in DOM implementation.
 Being accurate (act as closely as possible as the DOM API described by W3C.org) and extensible is the main reason why gdom should be used instead of built-in DOM API.
