@@ -1,4 +1,4 @@
-from gdom.readonly import ReadOnlyException
+from gdom.readonly import readonlyClass, readonlyMaster, ReadOnlyException
 
 
 
@@ -134,6 +134,86 @@ class DOMLocator:
 
 ### ======================== ###
 
+### DOMConfig =================================== ###
+
+def config_addParameter(DOMConfig, parameters):
+    """ Customize a DOMConfiguration by adding new parameters. 'parameters' argument is a dictionary of parameters and their default value.
+    Note :  DOMconfig is a DOMConfiguration object.
+            'parameters' may include existing parameters, it will cause the parameters to have a new default value.
+    """
+
+    params = DOMConfig.parameterNames + [DOMString(p.lower()) for p in parameters if p not in DOMConfig.parameterNames]
+    readonlyMaster.setAttr(DOMConfig, "parameterNames", params)
+
+    for param, value in parameters.items(): DOMConfig.setParameter(param, value)
+
+class DOMConfiguration(readonlyClass):
+    """ Used at parsing, serializating, validation and normalization. """
+
+    __parameters = {
+        "canonical-form": False,
+        "cdata-sections": True,
+        "check-character-normalization": False,
+        "comments": True,
+        "datatype-normalization": False, # Note : Setting this parameter to True have no effect if "validate" is set to False.
+        "element-content-whitespace": True,
+        "entities": True,
+        "error-handler": None,
+        "infoset": None,
+        "namespaces": True,
+        "namespace-declarations": True,  # Note : This parameter have no effect if "namespaces" is set to False.
+        "normalize-characters": False,
+        "schema-location": None,    # Optional
+        "schema-type": None,        # Optional
+        "split-cdata-sections": True,
+        "validate": False,
+        "validate-if-schema": False,
+        "well-formed": True
+                    }
+
+    __canonical = { "entities": False, "normalize-characters": False, "cdata-sections": False,
+                    "namespaces": True, "namespace-declarations": True, "well-formed": True, "element-content-whitespace": True}
+    __infoset = {   "validate-if-schema": False, "entities": False, "datatype-normalization": False, "cdata-sections": False,
+                     "namespace-declarations": True, "well-formed": True, "element-content-whitespace": True, "comments": True, "namespaces": True}
+
+    def __init__(self):
+
+        readonlyMaster.setAttr(self, "parameterNames", DOMStringList( [DOMString(p) for p in self.__parameters], readonly=True ))
+
+    def setParameter(self, name, value):
+        """ Set parameter to value. Note 'name' should be one from DOMConfiguration.parameterNames. """
+
+        name = name.lower()
+        if name not in self.parameterNames: raise DOMException("NOT_FOUND_ERR", "Parameter '%s' is invalid" % name)
+
+        # canonical-form
+        if name == "canonical-form" and value: self.__parameters.update(self.__canonical)
+        # datatype-normalization
+        elif name == "datatype-normalization" and value: self.__parameters["validate"] = True
+        # infoset
+        elif name == "infoset" and value: self.__parameters.update(self.__infoset)
+        # validate and validate-if-schema
+        elif name == "validate" and value: self.__parameters["validate-if-schema"] = False
+        elif name == "validate-if-schema" and value: self.__parameters["validate"] = False
+
+        # canonical-form
+        if name in self.__canonical and value != self.__canonical[name]: self.__parameters["canonical-form"] = False
+        if name in self.__infoset and value != self.__infoset[name]: self.__parameters["infoset"] = False
+
+        self.__parameters[name] = value
+
+    def getParameter(self, name):
+        """ Get parameter's value. """
+        name = name.lower()
+        if name not in self.parameterNames: raise DOMException("NOT_FOUND_ERR", "Parameter '%s' is invalid" % name)
+        return self.__parameters[name]
+
+    def canSetParameter(self, name):
+
+        # Any parameter can be set, they're all implemented (or will all be implemented, if you're using beta)
+        return name.lower() in self.parameterNames
+
+### ============================================= ###
 
 class OneTypeList(list):
     """ Base class for lists that admit only 1 type.
