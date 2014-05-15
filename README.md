@@ -16,24 +16,23 @@ How it defer with built-in
 
 First difference is the features available.
 
-Built-in DOM implementation provide the following features :
+| **Features** | **Level(s)**  | **Built-in** | **gdom** |
+| ------------ |:------------- |:------------:|:--------:|
+| ***Core***   | Level 1       |   **YES**    | **YES**  |
+|              | Level 2       |   **YES**    | **YES**  |
+|              | Level 3       |   _basic_    | **YES**  |
+| ***XML***    | Level 1       |   **YES**    | **YES**  |
+|              | Level 2       |   **YES**    | **YES**  |
+|              | Level 3       |   _basic_    | **YES**  |
+| ***LS***     | Level 3       |   **YES**    | **YES**  |
+| ***XPath***  | Level 3       |   __NO__     | **YES**  |
+| ***DTD***    | -------       |  _limited_   | **YES**  |
 
-    * Core Level 1, Level 2 and basic Level 3;
-    * XML Level 1, Level 2 and basic Level 3;
-    * LS Level 3.
-    
-gdom implementation provide the following features :
+*Note : gdom will later have more features, Built-in not.*
 
-    * Core Level 1, Level 2 and Level 3;
-    * XML Level 1, Level 2 and Level 3;
-    * LS Level 3;
-    * XPath Level 3;
-    * DTD (Document Type Definition);
-    * More to come in the future.
+Second difference is that gdom is designed to act **exactly** as W3C describe in their specifications, built-in dom doesn't. To see a full list of how Python' Built-in DOM doesn't respect W3C specifications, check here : [[url]]
 
-Second difference is that gdom is designed to act ***exactly*** as W3C describe in their specifications, built-in dom doesn't. To see a full list of how Python' Built-in DOM doesn't respect W3C specifications, check here : [[url]]
-
-Third (main) difference is that gdom is ***extensible*** : new features can easily be added by third-party. Plus, gdom is a 'collaborative script', everyone may submit an improvement to core scripts ([[url]]).
+Third (main) difference is that gdom is **extensible** : new features can easily be added by third-party. Plus, gdom is a 'collaborative script', everyone may submit an improvement to core scripts ([[url]]).
 
 
 What is DOM
