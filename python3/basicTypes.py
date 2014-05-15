@@ -1,3 +1,4 @@
+from copy import deepcopy
 from gdom.readonly import readonlyClass, readonlyMaster, ReadOnlyException
 
 
@@ -104,6 +105,10 @@ class DOMString(str):
     def Mid(self, start, count=None): return self.substr(start,count) if count else self[start:]
     def Left(self, count): return self[:count]
     def Right(self, count): return self[-count:]
+
+
+
+
 
 
 ### ======== TO DO ========= ###
@@ -260,7 +265,10 @@ class OneTypeList(list):
         i = len(self) - 1
         while i > -1 and self[i] != item: i-=1
         return i
-    
+
+    def __copy__(self): return type(self)([e for e in self], readonly=self.__readonly,readonlyError=self.__readonlyError)
+
+    def __deepcopy__(self, memo): return type(self)([deepcopy(e)  for e in self], readonly=self.__readonly,readonlyError=self.__readonlyError)
 
     @property
     def length(self): return len(self)
@@ -271,7 +279,8 @@ class DOMStringList(OneTypeList):
     """ List of DOMString. """
     __slots__ = ()
 
-    def __init__(self, *iterable, readonly=False): OneTypeList.__init__(self, *iterable, valueType=DOMString, readonly=readonly)
+    def __init__(self, *iterable, readonly=False, readonlyError=None): OneTypeList.__init__(self, *iterable, valueType=DOMString, readonly=readonly, readonlyError=readonlyError)
+
 
 
 
@@ -281,7 +290,7 @@ class NameList(OneTypeList):
         This is used in 'validation' DOM feature (not implemented yet). """
     __slots__ = ()
 
-    def __init__(self, *iterable, readonly=False): OneTypeList.__init__(self, *iterable, valueType=tuple, readonly=readonly)
+    def __init__(self, *iterable, readonly=False, readonlyError=None): OneTypeList.__init__(self, *iterable, valueType=tuple, readonly=readonly, readonlyError=readonlyError)
     def __contains__(self, key): return key in dict(self)
     def contains(self, key): return key in self
     def getName(self, i):
