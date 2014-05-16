@@ -1,7 +1,9 @@
 from copy import deepcopy
+from re import match, sub as REsub
 from gdom.readonly import readonlyClass, readonlyMaster, ReadOnlyException
 
 
+### UTILS ============================================================================== ###
 
 def itemInList(obj, i):
     """ Return item at index i if i < len(obj) else None """
@@ -14,18 +16,32 @@ def insertAt(_list, index, item, fill=None):
         _list += [fill,]*(index - len(_list))
         _list.insert(index, item)
 
+### ==================================================================================== ###
+
 
 
 class DOMString(str):
     """
         str subclass that implements methods specified by W3C plus every methods defined in javascript.
-        Methods from Java will be implemented in the future.
         This class is designed to easily implement javascript interpreter.
     """
 
-    # Built-in
+    # Notes :
+    #
+    # - DOMString.replace(old, new) will replace every occurence of old by new unlike specified in Javascript and Java where it only replaces the first occurence of old by new.
+    #                           As consequence, replace and replaceAll acts the same way.
+    # - Regexp are always given as Python regex (pattern string or RE objects).
+    # - split method in Java takes a Capital letter (and become Split)
+    #
+    # Some methods in Java have the same name as Javascript methods but takes other arguments.
+    # The function are made such as the method will act depending on what arguments are passed and return the appropriate result.
+    #
+    # Some methods won't raise exception while the Java/Javascript equivalent would
+    # BUT no exception will be raised while the Java/Javascript equivalent wouldn't.
+
+    # Built-in (redirect to DOMString type)
     def __add__(self, other): return DOMString(str.__add__(self, other))
-    def __radd__(self, other): return DOMString(str.__radd__(self, other))
+    def __radd__(self, other): return DOMString(str.__add__(other, self))
     def __mul__(self, other): return DOMString(str.__mul__(self, other))
     def __rmul__(self, other): return DOMString(str.__rmul__(self, other))
     def __getitem__(self, key): return DOMString(str.__getitem__(self, key))
@@ -37,15 +53,16 @@ class DOMString(str):
     def strip(self): return DOMString(str.strip(self))
     def rstrpi(self): return DOMString(str.rstrip(self))
     def format(self, *args, **kwdargs): return DOMString(str.format(self, *args, **kwdargs))
+    def split(self, sep=None, maxsplit=-1): return [DOMString(s) for s in self.split(sep, maxsplit)]
 
     # 'Javascript like' methods
     def charAt(self, i): return self[i]
     def charCodeAt(self, i): return ord(self[i])
     def contains(self, string): return string in self
     def concat(self, other): return DOMString(self + other)
-    def indexOf(self, string): return self.find(string)
+    def indexOf(self, string, fromIndex=0): return self[fromIndex:].find(string)
     #def lastIndexOf(self, string): return len(self) - len(string) - DOMString(self[-1::-1]).indexOf(string[-1::-1])
-    def lastIndexOf(self, string): return self.rfind(string)
+    def lastIndexOf(self, string, fromIndex=None): return (self[:fromIndex+1] if fromIndex else self).rfind(string)
     def localeCompare(self, string):
         i = 0
         if self < string: i = -1
@@ -54,12 +71,34 @@ class DOMString(str):
     def slice(self, start, end=None): return self[start:end]
     def substr(self, start, length): return self[start:start+length]
     def substring(self, start, end): return self[start if start > 0 else 0:end if end > 0 else 0]
-    def toLowerCase(self): return self.lower()
+    def toLowerCase(self, locale={}): # See http://docs.oracle.com/javase/7/docs/api/java/lang/String.html#toLowerCase%28java.util.Locale%29 for explanation on locale argument.
+        # No argument acts like Javascript's String.toLowerCase method.
+        string = DOMString()
+        for char in self:
+            if char in locale: string += locale[char]
+            else: string += char.lower()
+        return string
     def toLocaleLowerCase(self): return self.lower() # No idea how to do it.
-    def toUpperCase(self): return self.upper()
+    def toUpperCase(self, locale={}): #See http://docs.oracle.com/javase/7/docs/api/java/lang/String.html#toUpperCase%28java.util.Locale%29 for explanation on locale argument
+        # No argument acts like Javascript's String.toUpperCase method.
+        string = DOMString()
+        for char in self:
+            if char in locale: string += locale[char]
+            else: string += char.upper()
+        return string
     def toLocaleUpperCase(self): return self.upper() # No idea how to achieve this ...
     def trim(self): return self.strip()
-    def valueOf(self): return self
+    def valueOf(obj, *args):
+        """ Can be used as staticmethod. """
+        if type(obj) is DOMString: value = obj
+        elif type(obj) is str: value = DOMString(obj)
+        elif type(obj) is bool: value = DOMString("True") if obj else DOMString("False")
+        elif type(obj) is list:
+            value, i = DOMString(), args[0] if len(args) else 0
+            while (i < (args[0] + args[1] if len(args) else len(obj))) and (type(obj[i]) is str or type(obj[i]) is DOMString): value, i = value + obj[i], i + 1
+            if i < len(obj): value = DOMString(repr(obj))
+        else: value = DOMString(repr(obj))
+        return value
     def toString(self): return self
     @property
     def length(self): return len(self)
@@ -67,7 +106,7 @@ class DOMString(str):
     def constructor(self): return type(self)
 
     def tagEnclose(self, tag, attributes={}):
-        string = '<' + tag
+        string = DOMString('<') + tag
         for attr in attributes:
             string += ' %s="%s"' % (attr, str(attributes[attr]))
         return string + '>%s</%s>' % (self, tag)
@@ -94,6 +133,32 @@ class DOMString(str):
     def compareTo(self, string): return self.localeCompare(string)
     def compareToIgnoreCase(self, string): return self.lower().localeCompare(string.lower())
     def contentEquals(self, string): return self == string
+    def startsWith(self, prefix, offset=0): return self[offset:offset+len(prefix)] == prefix
+    def endsWith(self, suffix): return self.rfind(suffix) == len(self) - len(suffix) and self.rfind(suffix) > -1
+    def equals(self, other): return self == other
+    def equalsIgnoreCase(self, other): return self.lower() == other.lower()
+    def getBytes(self, charset="utf-8"): return self.encode("utf-8")
+    def getChars(self, srcBegin, srcEnd, dst, dstBegin):
+        if srcBegin > srcEnd or srcBegin < 0 or srcEnd > len(self) or dstBegin < 0 or dstBegin + (srcEnd-srcBegin) > len(dst): raise IndexError("IndexOutOfBoundsException")
+        for i in range(srcBegin, srcEnd): dst[dstBegin + (i-srcBegin)] = self[i]
+    def hashCode(self): return hash(self)
+    def isEmpty(self): return bool(self)
+    def matches(self, pattern): return bool(match(pattern, self))
+    def offsetByCodePoints(self, index, codePointOffset): return self.substr(index, codePointOffset)
+    def regionMatches(self, *args): #ignoreCase, toffset, other, ooffset, length):
+        if len(args) == 5: ignoreCase, toffset, other, ooffset, length = args
+        elif len(args) == 4: ignoreCase, toffset, other, ooffset, length = (False,) + args
+        else: raise TypeError("regionMatches() takes 4 or 5 arguments")
+        return self.substr(toffset, length).equalsIgnoreCase( other[ooffset:ooffset+length] ) if ignoreCase else self.substr(toffset,length) == other[ooffset:ooffset+length]
+    def replaceFirst(self, pattern, replacement): return REsub(pattern, replacement, self, 1)
+    def Split(self, pattern, limit=0): return [DOMString(s) for s in REsub(pattern, " "*len(self), self, limit).split(" "*len(self))]
+    def subSequence(self, start, end): return self[start:end]
+    def toCharArray(self): return [c for c in self] # Will be list of str, not a list of DOMString
+    def clone(self): return self # No need to perform self[:] since in Python strings are value types.
+    def getClass(self): return self.__class__
+
+    @staticmethod
+    def copyValueOf(data, offset=0, count=None): return data[offset:count]
     # http://docs.oracle.com/javase/7/docs/api/java/lang/String.html
 
     # 'C like' methods
@@ -217,6 +282,12 @@ class DOMConfiguration(readonlyClass):
 
         # Any parameter can be set, they're all implemented (or will all be implemented, if you're using beta)
         return name.lower() in self.parameterNames
+
+    def __deepcopy__(self, *m):
+
+        copied = DOMConfiguration()
+        for param in self.parameterNames: config_addParameter( copied, self.__parameters )
+        return copied
 
 ### ============================================= ###
 
